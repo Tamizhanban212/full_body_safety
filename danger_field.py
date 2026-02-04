@@ -1,6 +1,7 @@
 import pygame as pg
 import numpy as np
 import math 
+from scipy.integrate import quad
 
 WIDTH, HEIGHT = 800, 600
 
@@ -63,19 +64,50 @@ class Dangerfields():
 
         return term1 + term2 + term3
 
-    def integrate_dist_term(self):
-        a, b, c = self.a, self.b, self.c
-        pass
+    def compute_cdf_integral(a, b, c, A, B, C, M, N, P, k1=1.0, k2=1.0, gamma=1.0):
+        """
+        Computes:
+        CDF = k1 ∫₀¹ dt / √(a t² + b t + c)
+            + k2 γ ∫₀¹ √(A t² + B t + C) dt ⋅ ∫₀¹ (M t² + N t + P) dt
+            + k2 ∫₀¹ dt / (a t² + b t + c)
+            + k2 ∫₀¹ dt / (a t² + b t + c)^{3/2}
+        """
+        # First integral: 1 / sqrt(quadratic)
+        def integrand1(t):
+            return 1.0 / np.sqrt(a*t**2 + b*t + c)
+        I1, _ = quad(integrand1, 0, 1)
 
-    def integrate_vel_term(self):
-        a, b, c = self.a, self.b, self.c
-        A, B, C = self.A, self.B, self.C
-        pass
+        # Second part - product of two integrals
+        def integrand_sqrt(t):
+            return np.sqrt(A*t**2 + B*t + C)
+        I_sqrt, _ = quad(integrand_sqrt, 0, 1)
 
-    def integrate_ang_term(self):
-        a, b, c = self.a , self.b, self.c
-        M, N, P = self.M, self.N, self.P
-        pass
+        def integrand_linear(t):
+            return M*t**2 + N*t + P
+        I_lin, _ = quad(integrand_linear, 0, 1)
+
+        cross_term = I_sqrt * I_lin
+
+        # Third: 1 / quadratic
+        def integrand3(t):
+            return 1.0 / (a*t**2 + b*t + c)
+        I3, _ = quad(integrand3, 0, 1)
+
+        # Fourth: 1 / (quadratic)^{3/2}
+        def integrand4(t):
+            q = a*t**2 + b*t + c
+            return 1.0 / (q * np.sqrt(q))
+        I4, _ = quad(integrand4, 0, 1)
+
+        # Combine
+        result = (
+            k1 * I1 +
+            k2 * gamma * cross_term +
+            k2 * I3 +
+            k2 * I4
+        )
+
+        return result
 
     
 
