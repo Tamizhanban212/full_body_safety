@@ -1,19 +1,13 @@
-from gui import ManipulatorInterface
-import time
+# test_manipulator.py
+import manipulator
+import tkinter as tk
 
-manipulator = ManipulatorInterface()
+root = tk.Tk()
+app = manipulator.ManipulatorApp(root)
 
-# Initialize to home
-manipulator.init()
-time.sleep(1)
+# Test functions
+app.home()
+app.start_pos(3, 1)
+app.start_angle(0, 45, -45)
 
-# Move to some angles
-manipulator.angle(30, 45, 60)
-time.sleep(1)
-
-# Move to a position
-manipulator.pos(2, 1)
-time.sleep(1)
-
-# Back to home
-manipulator.angle(0, 0, 0)
+root.mainloop()
