@@ -1,6 +1,7 @@
 # test_manipulator.py
 import manipulator
 import tkinter as tk
+from danger_field import DangerField
 
 root = tk.Tk()
 app = manipulator.ManipulatorApp(root)
