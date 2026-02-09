@@ -17,6 +17,7 @@
 # test_manipulator.py
 import tkinter as tk
 from manipulator import ManipulatorApp   # assuming file is named manipulator.py
+from danger_field import DangerField
 
 root = tk.Tk()
 app = ManipulatorApp(root)
