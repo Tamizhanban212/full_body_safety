@@ -6,6 +6,9 @@ from manipulator import ManipulatorApp   # assuming file is named manipulator.py
 root = tk.Tk()
 app = ManipulatorApp(root)
 
+# Set frame rate (example: 60 FPS)
+app.manipulator.set_frame_rate(60)
+
 # Test movements (uncomment one by one or run all)
 app.start_angle(a1=30, a2=30, a3=30, duration=2)
 
