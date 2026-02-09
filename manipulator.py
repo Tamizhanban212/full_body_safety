@@ -216,16 +216,33 @@ class Manipulator3R:
         steps = len(angles_seq)
         time_step = duration / (steps - 1) if steps > 1 else 0
         file_name = 'manipulator_points.csv'
+        # Precompute all positions for all frames
+        all_x = []
+        all_y = []
+        for j in range(steps):
+            angles = angles_seq[j]
+            xj, yj = self._forward_kinematics(angles)
+            all_x.append(xj)
+            all_y.append(yj)
         with open(file_name, 'a', newline='') as f:
             writer = csv.writer(f)
             if not os.path.exists(file_name) or os.path.getsize(file_name) == 0:
-                writer.writerow(['time', 'point_id', 'x', 'y'])
+                writer.writerow(['time', 'point_id', 'x', 'y', 'z', 'vx', 'vy', 'vz'])
             for j in range(steps):
-                angles = angles_seq[j]
-                xj, yj = self._forward_kinematics(angles)
                 time = j * time_step
                 for i in range(4):  # 0: base, 1: joint1, 2: joint2, 3: end effector
-                    writer.writerow([time, i, xj[i], yj[i]])
+                    x = all_x[j][i]
+                    y = all_y[j][i]
+                    z = 0
+                    if j == 0:
+                        vx = 0
+                        vy = 0
+                        vz = 0
+                    else:
+                        vx = (all_x[j][i] - all_x[j-1][i]) / time_step if time_step > 0 else 0
+                        vy = (all_y[j][i] - all_y[j-1][i]) / time_step if time_step > 0 else 0
+                        vz = 0
+                    writer.writerow([time, i, x, y, z, vx, vy, vz])
 
 class ManipulatorApp:
     def __init__(self, root):
