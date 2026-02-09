@@ -214,31 +214,35 @@ class Manipulator3R:
 
     def _generate_csv(self, angles_seq, duration):
         steps = len(angles_seq)
-        L = sum(self.link_lengths)
-        num_points = 100
-        ds = L / (num_points - 1)
         time_step = duration / (steps - 1) if steps > 1 else 0
         file_name = 'manipulator_points.csv'
+        # Precompute all positions for all frames
+        all_x = []
+        all_y = []
+        for j in range(steps):
+            angles = angles_seq[j]
+            xj, yj = self._forward_kinematics(angles)
+            all_x.append(xj)
+            all_y.append(yj)
         with open(file_name, 'a', newline='') as f:
             writer = csv.writer(f)
             if not os.path.exists(file_name) or os.path.getsize(file_name) == 0:
-                writer.writerow(['time', 'point_id', 'x', 'y'])
+                writer.writerow(['time', 'point_id', 'x', 'y', 'z', 'vx', 'vy', 'vz'])
             for j in range(steps):
-                angles = angles_seq[j]
-                xj, yj = self._forward_kinematics(angles)
-                cum_lengths = [0]
-                for l in self.link_lengths:
-                    cum_lengths.append(cum_lengths[-1] + l)
                 time = j * time_step
-                for i in range(num_points):
-                    s = i * ds
-                    for link in range(3):
-                        if cum_lengths[link] <= s <= cum_lengths[link + 1]:
-                            frac = (s - cum_lengths[link]) / self.link_lengths[link]
-                            px = (1 - frac) * xj[link] + frac * xj[link + 1]
-                            py = (1 - frac) * yj[link] + frac * yj[link + 1]
-                            break
-                    writer.writerow([time, i, px, py])
+                for i in range(4):  # 0: base, 1: joint1, 2: joint2, 3: end effector
+                    x = all_x[j][i]
+                    y = all_y[j][i]
+                    z = 0
+                    if j == 0:
+                        vx = 0
+                        vy = 0
+                        vz = 0
+                    else:
+                        vx = (all_x[j][i] - all_x[j-1][i]) / time_step if time_step > 0 else 0
+                        vy = (all_y[j][i] - all_y[j-1][i]) / time_step if time_step > 0 else 0
+                        vz = 0
+                    writer.writerow([time, i, x, y, z, vx, vy, vz])
 
 class ManipulatorApp:
     def __init__(self, root):
