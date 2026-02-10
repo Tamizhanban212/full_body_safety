@@ -7,7 +7,7 @@ root = tk.Tk()
 app = ManipulatorApp(root)
 
 # Test movements (uncomment one by one or run all)
-app.start_angle(a1=30, a2=30, a3=30, duration=2)
+app.start_angle(a1=60, a2=120, a3=90, duration=2)
 
 root.mainloop()
 
