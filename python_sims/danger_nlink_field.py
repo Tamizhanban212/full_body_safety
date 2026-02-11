@@ -2,9 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, Button
+from matplotlib.animation import FuncAnimation
 from danger_field_jax import DangerFields
-
 
 class DangerFieldGUI:
     def __init__(self, csv_path=None):
@@ -27,6 +27,11 @@ class DangerFieldGUI:
         )
 
         self._load_data()
+        
+        self.is_playing = False
+        self.anim = None
+        self.speed = 1.0
+        
         self._setup_gui()
 
     def _load_data(self):
@@ -93,19 +98,53 @@ class DangerFieldGUI:
         self.ax.set_ylabel("Y")
         self.ax.set_title(f"Time = {self.frames[0]['time']:.2f} s")
 
-        # Slider
-        ax_slider = plt.axes([0.15, 0.05, 0.7, 0.03])
+        # Slider: Time
+        ax_slider = plt.axes([0.15, 0.12, 0.7, 0.03])
         self.slider = Slider(
             ax_slider,
             "Time (s)",
-            0.0,
-            2.0,
+            self.times[0],
+            self.times[-1],
             valinit=self.frames[0]["time"]
         )
         self.slider.on_changed(self._update)
 
+        # Button: Play/Pause
+        ax_play = plt.axes([0.15, 0.04, 0.1, 0.04])
+        self.btn_play = Button(ax_play, "Play")
+        self.btn_play.on_clicked(self._toggle_play)
+
+        # Slider: Speed
+        ax_speed = plt.axes([0.45, 0.04, 0.4, 0.04])
+        self.slider_speed = Slider(ax_speed, "Speed", 0.1, 5.0, valinit=1.0)
+        self.slider_speed.on_changed(self._update_speed)
+
         self._draw_manipulator(self.frames[0])
+        
+        # Setup Animation
+        self.anim = FuncAnimation(self.fig, self._animate, interval=50, cache_frame_data=False)
+        
         plt.show()
+
+    def _update_speed(self, val):
+        self.speed = val
+
+    def _toggle_play(self, event):
+        self.is_playing = not self.is_playing
+        self.btn_play.label.set_text("Pause" if self.is_playing else "Play")
+
+    def _animate(self, frame):
+        if not self.is_playing:
+            return
+        
+        # Advance time based on speed and interval (50ms)
+        dt = 0.05 * self.speed 
+        new_time = self.slider.val + dt
+        
+        if new_time > self.times[-1]:
+            new_time = self.times[0]
+            
+        self.slider.set_val(new_time)
 
     def _draw_manipulator(self, frame):
         pts = np.vstack([frame["r_starts"], frame["r_ends"][-1]])
