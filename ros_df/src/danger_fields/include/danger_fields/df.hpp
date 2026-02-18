@@ -4,39 +4,47 @@
 #include <Eigen/Eigen>
 #include <cassert>
 #include <cmath>
-
-
+#include <mutex>
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <controller_interface/controller_interface.hpp>
 
-namespace danger_fields
-{
-    controller_interface::InterfaceConfiguration
-    DF::command_interface_configuration() const
-    {
-        controller_interface::InterfaceConfiguration config;
-        config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-        for (int i = 0; i <= num_joints; ++i)
-        {
-            config.names.push_back(robot_type_ + "_joint" + std::to_string(i) + "/effort");
-        }
-        return config; 
-    }
+namespace danger_fields {
 
-    contrioller_interface::InterfaceConfiguration
-    DF::state_interface_configuration() const
-    {
-        controller_interface::InterfaceConfiguration config;
-        config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
+/**
+ * The pick place impedance controller moves joint 4 and 5 in a very compliant periodic movement.
+ */
+class DFController : public controller_interface::ControllerInterface {
+ public:
+  using Vector7d = Eigen::Matrix<double, 7, 1>;
+  [[nodiscard]] controller_interface::InterfaceConfiguration command_interface_configuration()
+      const override;
+  [[nodiscard]] controller_interface::InterfaceConfiguration state_interface_configuration()
+      const override;
+  controller_interface::return_type update(const rclcpp::Time& time,
+                                           const rclcpp::Duration& period) override;
+  CallbackReturn on_init() override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State& previous_state) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State& previous_state) override;
 
-        for (int i = 0; i <= num_joints; ++i)
-        {
-            config.names.push_back(robot_type_ + "_joint" + std::to_string(i) + "/position");
-            config.names.push_back(robot_type_ + "_joint" + std::to_string(i) + "/velocity");
-        }
-        return config; 
-    }
+ private:
+  std::string robot_type_;
+  std::string robot_description_;
+  const int num_joints = 7;
+  Vector7d q_;
+  Vector7d q_goal_;
+  std::mutex q_goal_mutex_;
+  Vector7d dq_;
+  Vector7d dq_filtered_;
+  Vector7d k_gains_;
+  Vector7d d_gains_;
+  void updateJointStates();
 
-    controller
-}
+  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr joint_goal_sub_;
+  rclcpp::Time last_goal_time_;
+};
 
+}  // namespace danger_fields

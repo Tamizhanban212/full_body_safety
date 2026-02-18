@@ -1,0 +1,9 @@
+<library path="danger_fields">
+    <class name="danger_fields/DFController"
+            type="danger_fields::DFController"
+            base_class_type="controller_interface::ControllerInterface">
+        <description>
+            Danger Fields impedance controller
+        </description>
+    </class>
+</library>
