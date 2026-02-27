@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 
 # Enable 64-bit precision for stable gradients
@@ -24,9 +25,15 @@ class DangerFields:
             
             return jnp.sum(link_dangers)
 
-        # 2. JIT Compile the Scalar and Gradient functions
+        # 2. JIT Compile the Scalar, Gradient, and Batch-Scalar functions
         self._fast_total_scalar = jax.jit(total_danger_func)
         self._fast_total_grad = jax.jit(jax.grad(total_danger_func, argnums=0))
+        
+        # Batch version for heatmaps: vmap over the first argument (r)
+        self._fast_total_scalar_batch = jax.jit(jax.vmap(
+            total_danger_func,
+            in_axes=(0, None, None, None, None, None, None, None)
+        ))
 
     @staticmethod
     def _link_math_static(r, r_i, r_ip1, v_i, v_ip1, k1, k2, gamma):
@@ -98,4 +105,17 @@ class DangerFields:
             control_vec = total_danger * (total_grad / grad_norm)
 
         return float(total_danger), list(total_grad), list(control_vec)
+
+    def compute_robot_danger_batch(self, r_targets, r_starts, r_ends, v_starts, v_ends):
+        """
+        Computes the total danger field for a BATCH of points (e.g., a grid).
+        """
+        r = jnp.array(r_targets)
+        r_s, r_e = jnp.array(r_starts), jnp.array(r_ends)
+        v_s, v_e = jnp.array(v_starts), jnp.array(v_ends)
+
+        danger_batch = self._fast_total_scalar_batch(
+            r, r_s, r_e, v_s, v_e, self.k1, self.k2, self.gamma
+        )
+        return np.array(danger_batch)
 
