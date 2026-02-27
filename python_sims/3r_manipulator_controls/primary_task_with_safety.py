@@ -208,7 +208,7 @@ class DangerFieldHardcodedGUI(QtWidgets.QMainWindow):
         self.X, self.Y = np.meshgrid(x_vals, y_vals)
         self.grid_points = np.stack([self.X.ravel(), self.Y.ravel(), np.zeros(self.N * self.N)], axis=1)
         
-        self.L = [1.5, 1.5, 1.5] 
+        self.L = [1.5, 1.5, 1.5]
         self.q_init = jnp.array([jnp.deg2rad(30), jnp.deg2rad(45), jnp.deg2rad(-30)])
         self.q = self.q_init.copy()
         
